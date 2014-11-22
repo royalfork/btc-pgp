@@ -1,0 +1,8 @@
+.container {
+  width: 800px;
+  margin: 30px auto;
+}
+
+.tab-pane {
+  padding: 20px;
+}

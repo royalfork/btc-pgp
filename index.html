@@ -1,0 +1,82 @@
+<html ng-app="app">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+    <title>Test</title>
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.css" type="text/css" media="screen" charset="utf-8" />
+    <link rel="stylesheet" href="css/main.css" type="text/css" media="screen" charset="utf-8" />
+
+    <script src="js/jq.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/bootstrap/bootstrap.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/openpgp.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/bitcoinjs.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/angular.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/main.js" type="text/javascript" charset="utf-8"></script>
+  </head>
+
+  <body>
+    
+    <div class="container" role="tabpanel" ng-controller="BtcPgp">
+
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
+        <li role="presentation"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
+        <li role="presentation"><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
+      </ul>
+
+      <!-- Tab panes -->
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="setup">
+  
+          <p>In order to use BTC/PGP, you must generate a bitcoin address and broadcast a transaction.  This reveals a the public key associated with your address in the blockchain. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
+          <form class="form-horizontal" role="form">
+            <div class="form-group">
+              <label for="randomNum" class="col-sm-2 control-label">Random:</label>
+              <div class="col-sm-10">
+                <input type="button" class="btn" id="randomNum" value="Create Random Number" ng-click="createRandom()">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="passphrase" class="col-sm-2 control-label">Passphrase:</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="passphrase" placeholder="Passphrase" ng-model="passphrase">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="wif" class="col-sm-2 control-label">WIF:</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="wif" placeholder="Wif Endcoded Private Key" ng-model="wif" ng-change="manualWIF(wif)">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="addr" class="col-sm-2 control-label">Address:</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="addr" disabled="true" value="{{ key.pub.getAddress(bitcoin.networks.testnet).toString() }}">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <button type="submit" class="btn btn-default">Sign in</button>
+              </div>
+            </div>
+          </form>
+
+
+
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="encrypt">
+          THIS IS PROFILE 
+        </div>
+
+
+        <div role="tabpanel" class="tab-pane" id="decrypt">...</div>
+
+
+
+      </div>
+
+    </div>  
+  </body>
+</html>
