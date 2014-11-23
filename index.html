@@ -11,6 +11,7 @@
     <script src="js/openpgp.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/bitcoinjs.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/angular.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/angular-cookies.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/main.js" type="text/javascript" charset="utf-8"></script>
   </head>
 
@@ -29,12 +30,12 @@
       <div class="tab-content">
         <div role="tabpanel" class="tab-pane active" id="setup">
   
-          <p>In order to use BTC/PGP, you must generate a bitcoin address and broadcast a transaction.  This reveals a the public key associated with your address in the blockchain. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
+          <p>In order to use BTC/PGP, you must generate a bitcoin address, fund that address, and broadcast a transaction.  Broadcasting a transaction will reveal your public key, giving other the ability to send you messages encrypted to your public key. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
           <form class="form-horizontal" role="form">
             <div class="form-group">
               <label for="randomNum" class="col-sm-2 control-label">Random:</label>
               <div class="col-sm-10">
-                <input type="button" class="btn" id="randomNum" value="Create Random Number" ng-click="createRandom()">
+                <input type="button" class="btn" id="randomNum" value="Create Random Key" ng-click="createRandom()">
               </div>
             </div>
             <div class="form-group">
@@ -57,10 +58,35 @@
             </div>
             <div class="form-group">
               <div class="col-sm-offset-2 col-sm-10">
-                <button type="submit" class="btn btn-default">Sign in</button>
+                <button type="submit" class="btn btn-default" ng-click="save()">Save in Cookie</button>
               </div>
             </div>
           </form>
+
+          <hr />
+
+          <form>
+            <div class="form-group">
+              <label for="addr" class="col-sm-2 control-label">Fund:</label>
+              <div class="col-sm-10">
+                <input type="button" class="btn f-r" value="Fund this Address" ng-click="fund(range2Btc(spender), key.pub.getAddress(bitcoin.networks.testnet).toString())" />
+                <span>{{ range2Btc(spender) }} BTC to {{ key.pub.getAddress(bitcoin.networks.testnet).toString() }}</span>
+                <input ng-model="spender" min="1" type="range" style="width: initial"/>
+              </div>
+            </div>
+          </form>
+
+          <!--this is weird....if this div isn't there, the progress bar doesn't get displayed-->
+          <div>
+            &nbsp;
+          </div>
+
+          <div class="progress" ng-show="progress">
+            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress }}%">
+            </div>
+          </div>
+
+
 
 
 

@@ -6,3 +6,41 @@
 .tab-pane {
   padding: 20px;
 }
+
+.f-r {
+  float: right;
+}
+
+.fund-range {
+  width: initial;
+}
+
+.progress {
+  margin-top: 20px;
+}
+
+.pending:before {
+  position: static;
+  float: right;
+  margin-right: -30px;
+  width: 20px;
+  height: 20px;
+  margin-left: 5px;
+  margin-top: 7px;
+  border: solid 3px #cfdadd;
+  border-top-color: #4f566f;
+  border-radius: 40px;
+  content: "";
+  -webkit-box-sizing: border-box;
+  -webkit-animation: spin 1s infinite linear;
+     -moz-animation: spin 1s infinite linear;
+      -ms-animation: spin 1s infinite linear;
+       -o-animation: spin 1s infinite linear;
+          animation: spin 1s infinite linear;
+}
+
+@-webkit-keyframes spin { 
+  100% { 
+    -webkit-transform: rotate(360deg); 
+  } 
+} 
