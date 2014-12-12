@@ -19,6 +19,9 @@
     
     <div class="container" role="tabpanel" ng-controller="BtcPgp">
 
+      <div class="header-info" ng-class="{ 'not-visible': !key }">
+        BTC-PGP address: <span class="bold">{{ addr(key) }}</span>
+      </div>
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
         <li role="presentation" class="active"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
@@ -30,67 +33,75 @@
       <div class="tab-content">
         <div role="tabpanel" class="tab-pane active" id="setup">
   
-          <p>In order to use BTC/PGP, you must generate a bitcoin address, fund that address, and broadcast a transaction.  Broadcasting a transaction will reveal your public key, giving other the ability to send you messages encrypted to your public key. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
+          <p>In order to use BTC/PGP, you must generate a bitcoin address, fund that address, and broadcast a transaction.  Broadcasting a transaction will reveal your public key, giving others the ability to send you messages encrypted to your public key. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
           <form class="form-horizontal" role="form">
             <div class="form-group">
               <label for="randomNum" class="col-sm-2 control-label">Random:</label>
               <div class="col-sm-10">
-                <input type="button" class="btn" id="randomNum" value="Create Random Key" ng-click="createRandom()">
+                <input type="button" class="btn" id="randomNum" value="Create Random Key" ng-click="createRandom()" ng-disabled="progress" >
               </div>
             </div>
             <div class="form-group">
               <label for="passphrase" class="col-sm-2 control-label">Passphrase:</label>
               <div class="col-sm-10">
-                <input type="text" class="form-control" id="passphrase" placeholder="Passphrase" ng-model="passphrase">
+                <input type="text" class="form-control" id="passphrase" placeholder="Passphrase" ng-model="passphrase" ng-disabled="progress" >
               </div>
             </div>
             <div class="form-group">
               <label for="wif" class="col-sm-2 control-label">WIF:</label>
               <div class="col-sm-10">
-                <input type="text" class="form-control" id="wif" placeholder="Wif Endcoded Private Key" ng-model="wif" ng-change="manualWIF(wif)">
+                <input type="text" class="form-control" id="wif" placeholder="Wif Endcoded Private Key" ng-model="wif" ng-change="manualWIF(wif)" ng-disabled="progress">
               </div>
             </div>
             <div class="form-group">
               <label for="addr" class="col-sm-2 control-label">Address:</label>
               <div class="col-sm-10">
-                <input type="text" class="form-control" id="addr" disabled="true" value="{{ key.pub.getAddress(bitcoin.networks.testnet).toString() }}">
+                <input type="text" class="form-control" id="addr" disabled="true" value="{{ addr(key) }}">
               </div>
             </div>
             <div class="form-group">
               <div class="col-sm-offset-2 col-sm-10">
-                <button type="submit" class="btn btn-default" ng-click="save()">Save in Cookie</button>
+                <button type="submit" class="btn btn-default" ng-click="save()">Save WIF in Cookie</button>
               </div>
             </div>
           </form>
 
           <hr />
 
-          <form>
+          <form ng-show="!utxo && key">
             <div class="form-group">
               <label for="addr" class="col-sm-2 control-label">Fund:</label>
               <div class="col-sm-10">
-                <input type="button" class="btn f-r" value="Fund this Address" ng-click="fund(range2Btc(spender), key.pub.getAddress(bitcoin.networks.testnet).toString())" />
-                <span>{{ range2Btc(spender) }} BTC to {{ key.pub.getAddress(bitcoin.networks.testnet).toString() }}</span>
-                <input ng-model="spender" min="1" type="range" style="width: initial"/>
+                <status-button value="Fund this Address" class="f-r" click="fund(0.001, addr(key))"></status-button>
+                <!--<input type="button" class="btn f-r" value="Fund this Address" ng-click="fund(0.001, key.pub.getAddress(bitcoin.networks.testnet).toString())" />-->
+                <span>0.001 BTC to {{ addr(key) }}</span>
               </div>
             </div>
           </form>
 
-          <!--this is weird....if this div isn't there, the progress bar doesn't get displayed-->
-          <div>
-            &nbsp;
+          <div ng-show="utxo && !fundTxn">
+            <p>Your address has been funded:<br /><a href="{{ 'http://explorer.chain.com/transactions/' + utxo.txid }}" target="_blank" class="m-l">{{ utxo.txid }}</a></p>
+            <p>You must now make a transaction to reveal your public key.  This transaction will not spend any bitcoin, but will allow you to include a message <b>less than 37 characters</b> which will be publicly viewable on the blockchain.</p>
+            <form class="form-horizontal" role="form">
+              <div class="form-group">
+                <label for="message" class="col-sm-2 control-label">Message:</label>
+                <div class="col-sm-10">
+                  <input type="text" id="message" ng-model="message">
+                  <span ng-class="{ 'font-red': message.length > 37, 'font-green': !message || message.length <= 37 }">{{ message.length || 0}} / 37</span>
+                  <status-button value="Send" class="f-r" click="broadcast(key, utxo, message)"></status-button>
+                  <!--<input type="button" class="btn m-l" value="Send" ng-click="broadcast(key, utxo, message)"/>-->
+                </div>
+              </div>
+            </form>
           </div>
 
-          <div class="progress" ng-show="progress">
-            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress }}%">
-            </div>
+          <div ng-show="fundTxn">
+            <p>Congratulations, you have successfully broadcast a transaction and set up your BTC-PGP address:<br /><a href="{{ 'http://explorer.chain.com/transactions/' + fundTxn.id + '#!transaction-op-return' }}" target="_blank" class="m-l">{{ fundTxn.id }}</a></p>
+            <p>You'll need the above WIF to decrypt messages. Make sure you keep it safe.</p>
+            <p>Be sure to periodically check for new messages <a href="http://explorer.chain.com/addresses/{{ addr(key) }}#!address-op-returns" target="_blank">here</a>, or any other testnet blockchain explorer of your choice.</p>
           </div>
 
-
-
-
-
-        </div>
+        </div> <!-- End of tab -->
 
         <div role="tabpanel" class="tab-pane" id="encrypt">
           THIS IS PROFILE 

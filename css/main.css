@@ -11,15 +11,23 @@
   float: right;
 }
 
+.m-l {
+  margin-left: 20px;
+}
+
+.font-red {
+  color: red;
+}
+
+.font-green {
+  color: green;
+}
+
 .fund-range {
   width: initial;
 }
 
-.progress {
-  margin-top: 20px;
-}
-
-.pending:before {
+.loading:after {
   position: static;
   float: right;
   margin-right: -30px;
@@ -44,3 +52,21 @@
     -webkit-transform: rotate(360deg); 
   } 
 } 
+
+#message {
+  width: 60%;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.header-info {
+  width: 100%;
+  font-style: italic;
+  text-align: right;
+}
+
+.not-visible {
+  visibility: hidden;
+}
