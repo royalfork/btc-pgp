@@ -11,6 +11,14 @@
   float: right;
 }
 
+.a-r {
+  text-align: right;
+}
+
+.m-t {
+  margin-top: 20px;
+}
+
 .m-l {
   margin-left: 20px;
 }
@@ -27,7 +35,7 @@
   width: initial;
 }
 
-.loading:after {
+.loading:before {
   position: static;
   float: right;
   margin-right: -30px;
@@ -69,4 +77,9 @@
 
 .not-visible {
   visibility: hidden;
+}
+
+.recipient-message {
+  padding: 5px !important;
+  margin: 5px 0px !important;
 }

@@ -24,14 +24,14 @@
       </div>
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
-        <li role="presentation"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
+        <li role="presentation"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
+        <li role="presentation" class="active"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
         <li role="presentation"><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
       </ul>
 
       <!-- Tab panes -->
       <div class="tab-content">
-        <div role="tabpanel" class="tab-pane active" id="setup">
+        <div role="tabpanel" class="tab-pane" id="setup">
   
           <p>In order to use BTC/PGP, you must generate a bitcoin address, fund that address, and broadcast a transaction.  Broadcasting a transaction will reveal your public key, giving others the ability to send you messages encrypted to your public key. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
           <form class="form-horizontal" role="form">
@@ -103,8 +103,24 @@
 
         </div> <!-- End of tab -->
 
-        <div role="tabpanel" class="tab-pane" id="encrypt">
-          THIS IS PROFILE 
+        <div role="tabpanel" class="tab-pane active" id="encrypt" ng-controller="EncryptCtrl">
+          <form class="form-horizontal" role="form">
+            <div class="form-group">
+              <label for="recipient" class="col-sm-2 control-label">To:</label>
+              <div class="col-sm-10" ng-class="{ 'loading' : fetchingRecipientPk }">
+                <input type="text" class="form-control" placeholder="BTC-PGP Address" ng-model="recipient" >
+                <div ng-show="recipientMessage" class="recipient-message alert alert-{{ recipientMessage.class }}">{{ recipientMessage.message }}</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="message" class="col-sm-2 control-label">Message:</label>
+              <div class="col-sm-10">
+                <textarea class="form-control" rows="10" placeholder="Message" ng-model="message" ></textarea>
+              </div>
+              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="encrypt(message, recipient)" value="Encrypt"></status-button>
+            </div>
+          </form>
+          
         </div>
 
 
