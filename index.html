@@ -11,7 +11,10 @@
     <script src="js/openpgp.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/bitcoinjs.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/angular.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/angular-bitcoin.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/angular-cookies.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/utils.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/openpgp.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/main.js" type="text/javascript" charset="utf-8"></script>
   </head>
 
@@ -25,7 +28,8 @@
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
         <li role="presentation"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
-        <li role="presentation" class="active"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
+        <li role="presentation" class="active"><a href="#setup2" aria-controls="setup2" role="tab" data-toggle="tab">Setup2</a></li>
+        <li role="presentation"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
         <li role="presentation"><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
       </ul>
 
@@ -38,19 +42,19 @@
             <div class="form-group">
               <label for="randomNum" class="col-sm-2 control-label">Random:</label>
               <div class="col-sm-10">
-                <input type="button" class="btn" id="randomNum" value="Create Random Key" ng-click="createRandom()" ng-disabled="progress" >
+                <input type="button" class="btn" id="randomNum" value="Create Random Key" ng-click="createRandom()" ng-disabled="utxo" >
               </div>
             </div>
             <div class="form-group">
               <label for="passphrase" class="col-sm-2 control-label">Passphrase:</label>
               <div class="col-sm-10">
-                <input type="text" class="form-control" id="passphrase" placeholder="Passphrase" ng-model="passphrase" ng-disabled="progress" >
+                <input type="text" class="form-control" id="passphrase" placeholder="Passphrase" ng-model="passphrase" ng-disabled="utxo" >
               </div>
             </div>
             <div class="form-group">
               <label for="wif" class="col-sm-2 control-label">WIF:</label>
               <div class="col-sm-10">
-                <input type="text" class="form-control" id="wif" placeholder="Wif Endcoded Private Key" ng-model="wif" ng-change="manualWIF(wif)" ng-disabled="progress">
+                <input type="text" class="form-control" id="wif" placeholder="Wif Endcoded Private Key" ng-model="wif" ng-change="manualWIF(wif)" ng-disabled="utxo">
               </div>
             </div>
             <div class="form-group">
@@ -103,6 +107,90 @@
 
         </div> <!-- End of tab -->
 
+
+        <div role="tabpanel" class="tab-pane" id="setup2" ng-controller="BtcPgp2">
+          <p>This app lets you send PGP encrypted mail with the bitcoin blockchain.  Mail is encrypted using bitcoin public keys, and sent to recipients using OP_RETURN transactions.  This is just an experiment, and uses the Testnet blockchain.  To use this app, you need a private key (to send and decrypt messages), a small amount of bitcoin (to broadcast messages to recipients), and a special BTC-PGP transaction (to broadcast your pubilc key).  All of this can be done below:  
+          <!--<input type="button" value="debug" ng-click="debug()" />-->
+          <!--<input type="button" value="debug" ng-click="debug2()" />-->
+          <!--<input type="button" value="debug" ng-click="debug3()" />-->
+          <!--3 rows, 3 columns-->
+          <!--Rows: private key, balance, btc-pgp message-->
+          <!--Columns: label, status, display-->
+          <table class="setup">
+            <tbody>
+              <tr>
+                <td>Private Key</td>
+                <td>
+                  <div ng-class="{ 'warning' : !key, 'success' : !!key }"></div>
+                </td>
+                <td>
+                  <input type="text" 
+                    class="wif-input"
+                    placeholder="Enter WIF" 
+                    ng-model="privateWif" 
+                    save-cookie
+                    btc-type="wif"
+                    btc-model="key" />
+                  <input type="button" class="btn" value="Create Random" ng-click="createRandom()" />
+                </td>
+              </tr>
+              <tr>
+                <td>Balance</td>
+                <td>
+                  <div ng-show="!key" class="warning"></div>
+                  <div ng-show="!!key" ng-class="{ 'pending' : key.utxo.state == 'pending', 'warning' : key.utxo.state === 'success_no_data', 'success' : key.utxo.state === 'success_data' }"></div>
+                </td>
+                <!--4 states, pending, success_data, success_no_data, fail-->
+                <!--if pending, show spinny thing-->
+                <!--if success_data, show balance-->
+                <!--if success_no_data, show funding indicator-->
+                <td>
+                  <div ng-show="!key">Please create private key first.</div>
+                  <div ng-show="!!key && key.utxo.state === 'success_no_data'" class="l-h">
+                    <status-button value="Fund" class="f-r" click="fund(0.001, key.addr)"></status-button>
+                    Fund account with 0.001 BTC 
+                  </div>
+                  <div ng-show="!!key && key.utxo.state === 'success_data'" class="l-h">
+                    Balance: {{ key.utxo.data | getBalance }}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>BTC-PGP Txn</td>
+                <td>
+                  <div ng-show="!key" class="warning"></div>
+                  <div ng-show="!!key" ng-class="{ 'pending' : key.opreturn.state == 'pending', 'warning' : key.opreturn.state === 'success_no_data', 'success' : key.opreturn.state === 'success_data' }"></div>
+                </td>
+                <!--4 states, pending, success_data, success_no_data, fail-->
+                <!--if pending, show spinny thing-->
+                <!--if success_data, show balance-->
+                <!--if success_no_data, show funding indicator-->
+                <td>
+                  <div ng-show="!key">Please create private key first.</div>
+                  <div ng-show="!!key && key.opreturn.state === 'success_no_data' && key.utxo.state === 'success_no_data'">Please fund this account first.</div>
+                  <div ng-show="!!key && key.opreturn.state === 'success_no_data' && key.utxo.state === 'success_data'" class="l-h">
+                    A special message be broadcast so others may securely message you.
+                    <br />
+                    <input type="text" id="message" ng-model="message">
+                    <span ng-class="{ 'font-red': message.length > 38, 'font-green': !message || message.length <= 38 }">{{ message.length || 0}} / 38</span>
+                    <status-button value="Send" class="f-r" click="broadcast(key, message)"></status-button>
+                  </div>
+                  <div ng-show="!!key && key.opreturn.state === 'success_data'" class="l-h">
+                    Message: {{ key.opreturn.data | showBtcPgpMessage }}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            
+          </table>
+
+          <p ng-show="key.utxo.state === 'success_data' && key.opreturn.state === 'success_data'">
+            Congratulations!  You are ready to send and receive BTC-PGP mail.  Your address is:
+            <br />
+            <span class="m-l">{{ key.addr }}</span>
+          </p>
+        </div>
+
         <div role="tabpanel" class="tab-pane active" id="encrypt" ng-controller="EncryptCtrl">
           <form class="form-horizontal" role="form">
             <div class="form-group">
@@ -115,11 +203,17 @@
             <div class="form-group">
               <label for="message" class="col-sm-2 control-label">Message:</label>
               <div class="col-sm-10">
-                <textarea class="form-control" rows="10" placeholder="Message" ng-model="message" ></textarea>
+                <textarea class="form-control" rows="10" placeholder="Message" ng-model="message_to_enc" ></textarea>
               </div>
-              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="encrypt(message, recipient)" value="Encrypt"></status-button>
+              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="encrypt(message_to_enc, pub_key)" value="Encrypt" disabled="!pub_key && !enc_message"></status-button>
             </div>
-          </form>
+            <div class="form-group" ng-show="encryptedMessage">
+              <label for="message" class="col-sm-2 control-label">Encrypted Message:</label>
+              <div class="col-sm-10">
+                <pre>{{ encryptedMessage }}</pre>
+              </div>
+              <status-button class="col-sm-6 col-sm-offset-6 a-r m-t" click="upload(encryptedMessage)" value="Upload and Broadcast Encrypted Message" ng-show="key && utxo && recipient"></status-button>
+            </div>
           
         </div>
 

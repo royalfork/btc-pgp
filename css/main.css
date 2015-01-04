@@ -11,6 +11,10 @@
   float: right;
 }
 
+.l-h {
+  line-height: 30px;
+}
+
 .a-r {
   text-align: right;
 }
@@ -33,6 +37,57 @@
 
 .fund-range {
   width: initial;
+}
+
+.wif-input {
+  width: 350px;
+  line-height: 26px;
+}
+
+.success:before {
+  content:  "\2713 "; 
+  width: 34px;
+  height: 34px;
+  text-align: center;
+  vertical-align: middle;
+  display: block;
+  padding-top: 7%;
+  font-size: 25px;
+  font-weight: bold;
+  color: green;
+}
+
+.warning:before {
+  content: "!";
+  width: 30px;
+  height: 30px;
+  border: 2px solid gray;
+  border-radius: 50%;
+  text-align: center;
+  vertical-align: middle;
+  display: block;
+  padding-top: 7%;
+  font-size: 20px;
+  font-weight: bold;
+  color: gray;
+}
+
+.pending:before {
+  position: static;
+  float: left;
+  margin: 7px 0;
+  width: 20px;
+  height: 20px;
+  border: solid 3px #cfdadd;
+  border-top-color: #4f566f;
+  border-radius: 40px;
+  content: "";
+  -webkit-box-sizing: border-box;
+  -webkit-animation: spin 1s infinite linear;
+     -moz-animation: spin 1s infinite linear;
+      -ms-animation: spin 1s infinite linear;
+       -o-animation: spin 1s infinite linear;
+          animation: spin 1s infinite linear;
 }
 
 .loading:before {
@@ -82,4 +137,16 @@
 .recipient-message {
   padding: 5px !important;
   margin: 5px 0px !important;
+}
+
+.setup {
+  margin: 40px auto;
+}
+
+.setup td {
+  padding: 10px;
+}
+
+.setup tr {
+  border-bottom: 1px solid black;
 }
