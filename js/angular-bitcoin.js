@@ -91,7 +91,7 @@ angular.module('AngularBitcoin', [])
     }
     
     // broadcasts an opreturn txn
-    this.sendOpReturn = function(message) {
+    this.sendOpReturn = function(message, recipient) {
       var that = this;
       return $q(function(resolve, reject) {
 
@@ -108,6 +108,13 @@ angular.module('AngularBitcoin', [])
         tx.addOutput(script, 0);
 
         var sat = utxo.value;
+
+        // if there's a recipient, add recipient
+        if (recipient) {
+          tx.addOutput(that.addr, 1000);
+          sat -= 1000;
+        }
+
         // add change
         tx.addOutput(that.addr, sat - 1000);
 
@@ -117,7 +124,6 @@ angular.module('AngularBitcoin', [])
 
         // broadcast transaction across network
         $http.post("http://faucet.royalforkblog.com/sendraw", { hex: tx.toHex() }).then(function(resp) {
-          console.log(tx);
           that.addUtxo({
             transaction_hash: resp.data.id,
             output_index: 1,
@@ -128,7 +134,7 @@ angular.module('AngularBitcoin', [])
             text: message
           });
 
-          resolve();
+          resolve(resp.data);
 
         }, function(error) {
           alert("There was an error funding your address.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");

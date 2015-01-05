@@ -1,4 +1,4 @@
-var app = angular.module('app', ['ngCookies', 'AngularBitcoin', 'Utils']);
+var app = angular.module('app', ['ngCookies', 'AngularBitcoin', 'AngularPgp', 'Utils']);
 
 Number.prototype.toSatoshi = function() {
     if (isNaN(this)) return NaN;
@@ -62,21 +62,21 @@ app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
     });
   };
 
-  $scope.broadcast = function(key, message) {
+  $scope.broadcast = function(key, message, recipient) {
     return $q(function(resolve, reject) {
       if (!message) {
         alert("Please insert a message");
         reject();
       }
 
-      if (message.length > 38) {
+      if (message.length > 40) {
         alert("Message is too long");
         reject();
       }
 
       // broadcast the message
-      key.sendOpReturn("p!" + message).then(function() {
-        resolve();
+      key.sendOpReturn(message, recipient).then(function(resp) {
+        resolve(resp);
       }, function (err) {
         console.log(err);
         reject();
@@ -94,165 +94,6 @@ app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
   }
   $scope.debug3 = function() {
     $scope.key.utxo.state = "success_data";
-  }
-
-});
-
-
-app.controller('BtcPgp', function($scope, $cookies, $q, $http, $timeout) {
-
-  $scope.bitcoin = bitcoin;
-
-  // read from cookies, if we have them
-  if ($cookies.passphrase) {
-    // because passphrase is watched, this will set the key, and the wif automatically
-    $scope.passphrase = $cookies.passphrase;
-  } else if ($cookies.wif) {
-    $scope.wif = $cookies.wif; 
-    $scope.key = bitcoin.ECKey.fromWIF($scope.wif);
-  }
-
-  $scope.createRandom = function() {
-    // clear passphrase
-    if ($scope.passphrase) {
-      $scope.passphrase = "";
-    }
-    $scope.key = bitcoin.ECKey.makeRandom();
-    console.log($scope.addr($scope.key).length);
-  };
-
-  $scope.addr =  function (key) {
-    if (key) {
-      return key.pub.getAddress(bitcoin.networks.testnet).toString(); 
-    }
-  }
-
-  $scope.$watch('passphrase', function(val) {
-    if (val) {
-      var hash = bitcoin.crypto.sha256(val);
-      $scope.key = bitcoin.ECKey.fromUint8Arr(true, hash);
-      $scope.key.passphrase = val;
-    }
-  });
-
-  $scope.manualWIF = function(val) {
-    $scope.passphrase = "";
-    if (val) {
-      try {
-        $scope.key = bitcoin.ECKey.fromWIF(val);
-      } catch (e) {
-        /* handle error */
-        console.log("Wif is wrong");
-      }
-    } else {
-      $scope.key = "";
-    }
-  };
-
-  $scope.$watch('key', function(val) {
-    if (val) {
-      $scope.wif = $scope.key.toWIF();
-    }
-  });
-
-  $scope.save = function() {
-    if ($scope.passphrase) {
-      $cookies.passphrase = $scope.passphrase;
-    }
-    $cookies.wif = $scope.wif;
-    alert("WIF " + $scope.wif + " has been saved as a cookie.");
-  }
-
-  // parse verose raw transaction from bitcoind and return utxo index of addr
-  function getUtxoIndex (txn, addr) {
-    for (var i = 0, l = txn.vout.length; i < l; i ++) {
-      var v = txn.vout[i];
-      if (v.scriptPubKey.addresses[0] === addr) {
-        return v.n; 
-      }
-    }
-  }
-
-  $scope.fund = function(amount, addr) {
-    return $q(function(resolve, reject) {
-      $http.post("http://localhost:4444", { address: addr, amount: amount.toSatoshi(), verbose: true }).then(function (resp) {
-        var utxo_idx = getUtxoIndex(resp.data.txn, addr);
-        $scope.utxo = {
-          txid: resp.data.txn.txid,
-          idx: utxo_idx,
-          value: resp.data.txn.vout[utxo_idx].value
-        };
-        resolve();
-      }, function(error) {
-        alert("There was an error funding your address.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");
-        resolve();
-      });
-    });
-  };
-
-  $scope.broadcast = function(key, utxo, message, recipient) {
-    return $q(function(resolve, reject) {
-      if (message.length > 40) {
-        resolve();
-        return alert("Message is too long.");
-      }
-
-      // create message
-      var addr = key.pub.getAddress(bitcoin.networks.testnet).toString();
-      // add input
-      var tx = new bitcoin.TransactionBuilder();
-      tx.addInput(utxo.txid, utxo.idx);
-
-      // create op_return script
-      var script = bitcoin.Script.fromASM("OP_RETURN " + a2hex("mx!"+message));
-      tx.addOutput(script, 0);
-
-      var sat = utxo.value.toSatoshi();
-      if (recipient) {
-        tx.addOutput(recipient, 1000);
-        sat -= 1000;
-      }
-
-      // add change
-      tx.addOutput(addr, sat - 1000);
-
-      tx.sign(0, key);
-      tx = tx.build();
-      console.log(tx);
-
-      // broadcast transaction across network
-      $http.post("http://localhost:4444/sendraw", { hex: tx.toHex() }).then(function(resp) {
-        console.log(tx);
-        $scope.fundTxn = resp.data;
-        $scope.utxo = {
-          txid: resp.data.id,
-          idx: 1,
-          value: tx.outs[1].value.toBitcoin()
-        };
-        resolve();
-      }, function(error) {
-        alert("There was an error funding your address.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");
-        console.log(error);
-        resolve();
-      });
-    })
-  };
-
-  function hex2a(hexx) {
-    var hex = hexx.toString();//force conversion
-    var str = '';
-    for (var i = 0; i < hex.length; i += 2)
-        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    return str;
-  }
-
-  function a2hex(str) {
-    var arr = [];
-    for (var i = 0, l = str.length; i < l; i ++) {
-      var hex = Number(str.charCodeAt(i)).toString(16);
-      arr.push(hex);
-    }
-    return arr.join('');
   }
 
 });
@@ -276,8 +117,7 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
             var a = bitcoin.Address.fromBase58Check(addr);
             resolve(a);
           } catch (error) {
-            reject({
-            });
+            reject({});
           }
         });
       }
@@ -348,33 +188,36 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
   $scope.pub_key = "03a9f527f3447228ae9a58e97dac0f5768fe87d8c3a4955c2666b92ecb87226497";
   $scope.message_to_enc = "testing";
 
-  $scope.encrypt = function(message, pub_key) {
-    return $q(function(resolve, reject) {
-      var pgpKey = openpgp.key.generateEccPublic({pub: pub_key, date: new Date(1225566993000)});
-      openpgp.encryptMessage(pgpKey, message).then(function(msg_enc) {
-        $scope.encryptedMessage = msg_enc;
-        resolve();
-      }, function(error) {
-        console.log(error);
-        reject();
-      });
-    });
-  };
+  //$scope.encrypt = function(messageObj) {
+    //return messageObj.encrypt();
+  //}
+  //$scope.encrypt = function(message, pub_key) {
+    //return $q(function(resolve, reject) {
+      //var pgpKey = openpgp.key.generateEccPublic({pub: pub_key, date: new Date(1225566993000)});
+      //openpgp.encryptMessage(pgpKey, message).then(function(msg_enc) {
+        //$scope.encryptedMessage = msg_enc;
+        //resolve();
+      //}, function(error) {
+        //console.log(error);
+        //reject();
+      //});
+    //});
+  //};
 
 
-  $scope.encryptedMessage = "-----BEGIN PGP MESSAGE-----\n" +
-  "Version: OpenPGP.js v0.8.1ecc\n" +
-  "Comment: http://royalforkblog.com\n" +
-  "\n" +
-  "wX4Dkx39yzzME0oSAggEce6Ygbd+nx13vZ90yaJEPcS53S6DIUzqwhmG6Cs\n" +
-  "bSPIYJyGprl5FEnf9jlsi5DXFSY2IqJIMVDhxqbb6ZAjLDDRHe7vsYVdkFj\n" +
-  "M1S3RJfjLQ3DolNtOt4zEvi2hRez7gX9DE5xYlGjMiuHY+N/fo7SPwGWuyY\n" +
-  "tbxbRH0j5M6sr3m2I7AACk0tXSNf2dzAzdmI3ZbeLaDR9fBFdgexbNVmRsx\n" +
-  "ykut7O7seSMFqmJE+w==\n" +
-  "=+WqT\n" +
-  "-----END PGP MESSAGE-----";
+  //$scope.encryptedMessage = "-----BEGIN PGP MESSAGE-----\n" +
+  //"Version: OpenPGP.js v0.8.1ecc\n" +
+  //"Comment: http://royalforkblog.com\n" +
+  //"\n" +
+  //"wX4Dkx39yzzME0oSAggEce6Ygbd+nx13vZ90yaJEPcS53S6DIUzqwhmG6Cs\n" +
+  //"bSPIYJyGprl5FEnf9jlsi5DXFSY2IqJIMVDhxqbb6ZAjLDDRHe7vsYVdkFj\n" +
+  //"M1S3RJfjLQ3DolNtOt4zEvi2hRez7gX9DE5xYlGjMiuHY+N/fo7SPwGWuyY\n" +
+  //"tbxbRH0j5M6sr3m2I7AACk0tXSNf2dzAzdmI3ZbeLaDR9fBFdgexbNVmRsx\n" +
+  //"ykut7O7seSMFqmJE+w==\n" +
+  //"=+WqT\n" +
+  //"-----END PGP MESSAGE-----";
 
-  $scope.shortUrl = "http://rfrk.co/Mw==";
+  //$scope.shortUrl = "http://rfrk.co/Mw==";
 
   $scope.upload = function(message) {
     return $q(function(resolve, reject) {
@@ -382,9 +225,10 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
         return $http.post("http://rfrk.co/api/v1/shorten", { long_url: gistResp.data.files.message.raw_url});
       }).then(function(shortenResp) {
         $scope.shortUrl = shortenResp.data.short_url;
-        return $scope.broadcast($scope.key, $scope.utxo, $scope.shortUrl, $scope.recipient);
+        return $scope.broadcast($scope.key, "m!" + $scope.shortUrl, $scope.recipient);
       }).then(function(broadcastResp) {
-        // do something here XXX
+        console.log("DONE");
+        resolve();
       });
     });
   };

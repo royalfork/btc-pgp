@@ -15,100 +15,26 @@
     <script src="js/angular-cookies.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/utils.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/openpgp.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="js/angular-pgp.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/main.js" type="text/javascript" charset="utf-8"></script>
   </head>
 
   <body>
     
-    <div class="container" role="tabpanel" ng-controller="BtcPgp">
+    <div class="container" role="tabpanel" ng-controller="BtcPgp2">
 
-      <div class="header-info" ng-class="{ 'not-visible': !key }">
-        BTC-PGP address: <span class="bold">{{ addr(key) }}</span>
-      </div>
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
         <li role="presentation"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
-        <li role="presentation" class="active"><a href="#setup2" aria-controls="setup2" role="tab" data-toggle="tab">Setup2</a></li>
-        <li role="presentation"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
+        <li role="presentation" class="active"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
         <li role="presentation"><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
       </ul>
 
       <!-- Tab panes -->
       <div class="tab-content">
+
+
         <div role="tabpanel" class="tab-pane" id="setup">
-  
-          <p>In order to use BTC/PGP, you must generate a bitcoin address, fund that address, and broadcast a transaction.  Broadcasting a transaction will reveal your public key, giving others the ability to send you messages encrypted to your public key. Because this is a proof of concept, this app uses testnet, and address generation, funding, and transaction broadcast can all be done in the browser below.</p>
-          <form class="form-horizontal" role="form">
-            <div class="form-group">
-              <label for="randomNum" class="col-sm-2 control-label">Random:</label>
-              <div class="col-sm-10">
-                <input type="button" class="btn" id="randomNum" value="Create Random Key" ng-click="createRandom()" ng-disabled="utxo" >
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="passphrase" class="col-sm-2 control-label">Passphrase:</label>
-              <div class="col-sm-10">
-                <input type="text" class="form-control" id="passphrase" placeholder="Passphrase" ng-model="passphrase" ng-disabled="utxo" >
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="wif" class="col-sm-2 control-label">WIF:</label>
-              <div class="col-sm-10">
-                <input type="text" class="form-control" id="wif" placeholder="Wif Endcoded Private Key" ng-model="wif" ng-change="manualWIF(wif)" ng-disabled="utxo">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="addr" class="col-sm-2 control-label">Address:</label>
-              <div class="col-sm-10">
-                <input type="text" class="form-control" id="addr" disabled="true" value="{{ addr(key) }}">
-              </div>
-            </div>
-            <div class="form-group">
-              <div class="col-sm-offset-2 col-sm-10">
-                <button type="submit" class="btn btn-default" ng-click="save()">Save WIF in Cookie</button>
-              </div>
-            </div>
-          </form>
-
-          <hr />
-
-          <form ng-show="!utxo && key">
-            <div class="form-group">
-              <label for="addr" class="col-sm-2 control-label">Fund:</label>
-              <div class="col-sm-10">
-                <status-button value="Fund this Address" class="f-r" click="fund(0.001, addr(key))"></status-button>
-                <!--<input type="button" class="btn f-r" value="Fund this Address" ng-click="fund(0.001, key.pub.getAddress(bitcoin.networks.testnet).toString())" />-->
-                <span>0.001 BTC to {{ addr(key) }}</span>
-              </div>
-            </div>
-          </form>
-
-          <div ng-show="utxo && !fundTxn">
-            <p>Your address has been funded:<br /><a href="{{ 'http://explorer.chain.com/transactions/' + utxo.txid }}" target="_blank" class="m-l">{{ utxo.txid }}</a></p>
-            <p>You must now make a transaction to reveal your public key.  This transaction will not spend any bitcoin, but will allow you to include a message <b>less than 37 characters</b> which will be publicly viewable on the blockchain.</p>
-            <form class="form-horizontal" role="form">
-              <div class="form-group">
-                <label for="message" class="col-sm-2 control-label">Message:</label>
-                <div class="col-sm-10">
-                  <input type="text" id="message" ng-model="message">
-                  <span ng-class="{ 'font-red': message.length > 37, 'font-green': !message || message.length <= 37 }">{{ message.length || 0}} / 37</span>
-                  <status-button value="Send" class="f-r" click="broadcast(key, utxo, message)"></status-button>
-                  <!--<input type="button" class="btn m-l" value="Send" ng-click="broadcast(key, utxo, message)"/>-->
-                </div>
-              </div>
-            </form>
-          </div>
-
-          <div ng-show="fundTxn">
-            <p>Congratulations, you have successfully broadcast a transaction and set up your BTC-PGP address:<br /><a href="{{ 'http://explorer.chain.com/transactions/' + fundTxn.id + '#!transaction-op-return' }}" target="_blank" class="m-l">{{ fundTxn.id }}</a></p>
-            <p>You'll need the above WIF to decrypt messages. Make sure you keep it safe.</p>
-            <p>Be sure to periodically check for new messages <a href="http://explorer.chain.com/addresses/{{ addr(key) }}#!address-op-returns" target="_blank">here</a>, or any other testnet blockchain explorer of your choice.</p>
-          </div>
-
-        </div> <!-- End of tab -->
-
-
-        <div role="tabpanel" class="tab-pane" id="setup2" ng-controller="BtcPgp2">
           <p>This app lets you send PGP encrypted mail with the bitcoin blockchain.  Mail is encrypted using bitcoin public keys, and sent to recipients using OP_RETURN transactions.  This is just an experiment, and uses the Testnet blockchain.  To use this app, you need a private key (to send and decrypt messages), a small amount of bitcoin (to broadcast messages to recipients), and a special BTC-PGP transaction (to broadcast your pubilc key).  All of this can be done below:  
           <!--<input type="button" value="debug" ng-click="debug()" />-->
           <!--<input type="button" value="debug" ng-click="debug2()" />-->
@@ -173,7 +99,7 @@
                     <br />
                     <input type="text" id="message" ng-model="message">
                     <span ng-class="{ 'font-red': message.length > 38, 'font-green': !message || message.length <= 38 }">{{ message.length || 0}} / 38</span>
-                    <status-button value="Send" class="f-r" click="broadcast(key, message)"></status-button>
+                    <status-button value="Send" class="f-r" click="broadcast(key, 'p!' + message)"></status-button>
                   </div>
                   <div ng-show="!!key && key.opreturn.state === 'success_data'" class="l-h">
                     Message: {{ key.opreturn.data | showBtcPgpMessage }}
@@ -203,16 +129,20 @@
             <div class="form-group">
               <label for="message" class="col-sm-2 control-label">Message:</label>
               <div class="col-sm-10">
-                <textarea class="form-control" rows="10" placeholder="Message" ng-model="message_to_enc" ></textarea>
+                <textarea class="form-control" rows="10" placeholder="Message" ng-model="message_to_enc" message-model="messageObj" ></textarea>
               </div>
-              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="encrypt(message_to_enc, pub_key)" value="Encrypt" disabled="!pub_key && !enc_message"></status-button>
+              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="messageObj.encrypt(pub_key)" value="Encrypt" disabled="!pub_key || !message_to_enc"></status-button>
             </div>
-            <div class="form-group" ng-show="encryptedMessage">
+            <div class="form-group" ng-show="!!messageObj.asciiarmor">
               <label for="message" class="col-sm-2 control-label">Encrypted Message:</label>
               <div class="col-sm-10">
-                <pre>{{ encryptedMessage }}</pre>
+                <pre>{{ messageObj.asciiarmor }}</pre>
               </div>
-              <status-button class="col-sm-6 col-sm-offset-6 a-r m-t" click="upload(encryptedMessage)" value="Upload and Broadcast Encrypted Message" ng-show="key && utxo && recipient"></status-button>
+              <status-button class="col-sm-6 col-sm-offset-6 a-r m-t" click="messageObj.uploadBroadcast(key)" value="Upload and Broadcast Encrypted Message" ng-show="!!key && key.utxo.state === 'success_data' && messageObj.upload.state !== 'success_data'"></status-button>
+              <div>
+                This message has been uploaded and broadcast on the blockchain.  You can see it: <br /> 
+                <a class="m-l" >{{ messageObj.upload.data }}</a> 
+              </div>
             </div>
           
         </div>
