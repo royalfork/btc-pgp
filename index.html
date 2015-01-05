@@ -34,7 +34,7 @@
       <div class="tab-content">
 
 
-        <div role="tabpanel" class="tab-pane" id="setup">
+        <div role="tabpanel" class="tab-pane active" id="setup">
           <p>This app lets you send PGP encrypted mail with the bitcoin blockchain.  Mail is encrypted using bitcoin public keys, and sent to recipients using OP_RETURN transactions.  This is just an experiment, and uses the Testnet blockchain.  To use this app, you need a private key (to send and decrypt messages), a small amount of bitcoin (to broadcast messages to recipients), and a special BTC-PGP transaction (to broadcast your pubilc key).  All of this can be done below:  
           <!--<input type="button" value="debug" ng-click="debug()" />-->
           <!--<input type="button" value="debug" ng-click="debug2()" />-->
@@ -55,8 +55,7 @@
                     placeholder="Enter WIF" 
                     ng-model="privateWif" 
                     save-cookie
-                    btc-type="wif"
-                    btc-model="key" />
+                    wif-model="key" />
                   <input type="button" class="btn" value="Create Random" ng-click="createRandom()" />
                 </td>
               </tr>
@@ -117,7 +116,7 @@
           </p>
         </div>
 
-        <div role="tabpanel" class="tab-pane active" id="encrypt" ng-controller="EncryptCtrl">
+        <div role="tabpanel" class="tab-pane" id="encrypt" ng-controller="EncryptCtrl">
           <form class="form-horizontal" role="form">
             <div class="form-group">
               <label for="recipient" class="col-sm-2 control-label">To:</label>
