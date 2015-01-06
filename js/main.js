@@ -99,6 +99,12 @@ app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
 });
 
 app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
+
+  $scope.debug = function() {
+    console.log($scope);
+    debugger;
+  }
+
   $scope.$watch('recipient', function(newVal, oldVal) {
     if (newVal && newVal.length > 26) {
       //

@@ -34,6 +34,30 @@ angular.module('AngularBitcoin', [])
       processSuccess: function(data) {
         return data; 
       }
+    },
+    "txns": {
+      getUrl: function(addr) {
+        return "https://api.chain.com/v2/testnet3/addresses/"+addr+"/transactions?api-key-id=" + CHAIN_KEY;
+      },
+      processSuccess: function(data) {
+        return data;
+      }
+    },
+    "pubKey": {
+      getUrl: function(addr) {
+        return "https://api.chain.com/v2/testnet3/addresses/"+addr+"/transactions?api-key-id=" + CHAIN_KEY;
+      },
+      processSuccess: function(data, addr) {
+        // parse list of txns, extract pub key from txn
+        for (var i = 0, l = data.length; i < l; i ++) {
+          var v = data[i];
+          for (var i = 0, l = v.inputs.length; i < l; i ++) {
+            if (v.inputs[i].addresses[0] === addr.toString()) {
+              return v.inputs[i]["script_signature"].split(" ")[1]
+            }
+          }
+        }
+      }
     }
   };
 
@@ -51,9 +75,10 @@ angular.module('AngularBitcoin', [])
     var obj = {};
     obj.state = states.PENDING;
     $http.get(types[type].getUrl(args)).then(function(resp) {
-      if (resp.data && resp.data.length > 0) {
+      var data = types[type].processSuccess(resp.data, args);
+      if (data && data.length > 0) {
         obj.state = states.SUCCESS_DATA;
-        obj.data = types[type].processSuccess(resp.data);
+        obj.data = data;
       } else {
         obj.state = states.SUCCESS_NO_DATA;
       }
@@ -63,66 +88,69 @@ angular.module('AngularBitcoin', [])
     return obj;
   }
 
+  function sendOpReturn (message, recipient) {
+    var that = this;
+    return $q(function(resolve, reject) {
+
+      // add input
+      if (!that.utxo.data) {
+        return reject("No utxo data");
+      }
+      var utxo = that.utxo.data.pop();
+      var tx = new bitcoin.TransactionBuilder();
+      tx.addInput(utxo.transaction_hash, utxo.output_index);
+
+      // create op_return script
+      var script = bitcoin.Script.fromASM("OP_RETURN " + BtcUtils.a2hex(message));
+      tx.addOutput(script, 0);
+
+      var sat = utxo.value;
+
+      // if there's a recipient, add recipient
+      if (recipient) {
+        tx.addOutput(that.addr, 1000);
+        sat -= 1000;
+      }
+
+      // add change
+      tx.addOutput(that.addr, sat - 1000);
+
+      tx.sign(0, that.key);
+      tx = tx.build();
+      console.log(tx);
+
+      // broadcast transaction across network
+      $http.post("http://faucet.royalforkblog.com/sendraw", { hex: tx.toHex() }).then(function(resp) {
+        that.addUtxo({
+          transaction_hash: resp.data.id,
+          output_index: 1,
+          value: tx.outs[1].value
+        });
+
+        that.addOpReturn({
+          text: message
+        });
+
+        resolve(resp.data);
+
+      }, function(error) {
+        alert("There was an error funding your address.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");
+        console.log(error);
+        reject();
+      });
+        
+    });
+  }
+
 
   return function(opts){
     if (opts.key) {
       this.key = opts.key;
       this.addr = this.key.pub.getAddress(bitcoin.networks.testnet).toString(); 
+      this.pub_key_hex = this.key.pub.toHex();
 
       // broadcasts an opreturn txn
-      this.sendOpReturn = function(message, recipient) {
-        var that = this;
-        return $q(function(resolve, reject) {
-
-          // add input
-          if (!that.utxo.data) {
-            return reject("No utxo data");
-          }
-          var utxo = that.utxo.data.pop();
-          var tx = new bitcoin.TransactionBuilder();
-          tx.addInput(utxo.transaction_hash, utxo.output_index);
-
-          // create op_return script
-          var script = bitcoin.Script.fromASM("OP_RETURN " + BtcUtils.a2hex(message));
-          tx.addOutput(script, 0);
-
-          var sat = utxo.value;
-
-          // if there's a recipient, add recipient
-          if (recipient) {
-            tx.addOutput(that.addr, 1000);
-            sat -= 1000;
-          }
-
-          // add change
-          tx.addOutput(that.addr, sat - 1000);
-
-          tx.sign(0, that.key);
-          tx = tx.build();
-          console.log(tx);
-
-          // broadcast transaction across network
-          $http.post("http://faucet.royalforkblog.com/sendraw", { hex: tx.toHex() }).then(function(resp) {
-            that.addUtxo({
-              transaction_hash: resp.data.id,
-              output_index: 1,
-              value: tx.outs[1].value
-            });
-
-            that.addOpReturn({
-              text: message
-            });
-
-            resolve(resp.data);
-
-          }, function(error) {
-            alert("There was an error funding your address.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");
-            console.log(error);
-            reject();
-          });
-            
-        });
-      }
+      this.sendOpReturn = sendOpReturn;
     }
 
     if (opts.addr) {
@@ -157,6 +185,18 @@ angular.module('AngularBitcoin', [])
       }
     }
 
+    if (opts.txns) {
+      this.txns = (function(that) {
+        return setUp('txns', that.addr);
+      }(this));
+    }
+
+    if (opts.pubKey) {
+      this.pubKey = (function(that) {
+        return setUp('pubKey', that.addr);
+      }(this));
+    }
+
   }
 })
 
@@ -189,16 +229,12 @@ angular.module('AngularBitcoin', [])
 })
 
 // BtcObj can be built with WIF (or addr)
-// this service validates the WIF or addr
+// this service validates the WIF of addr
 // if valid, returns a BtcObj
 // if invalid, returns undef
-// as part of the options, it also includes boolean flags for which attributes it wishes to get asyncronously
-//  these flags are: 
-//    utxo
-//    txns
-//    opreturns
 .service('BtcObjBuilder', function(BtcObj) {
   this.build = function(opts) {
+    // validates WIF
     if (opts.hasOwnProperty("wif")) {
       // wif is invalid
       if (!opts.wif || opts.wif.length < 51) {
@@ -215,32 +251,62 @@ angular.module('AngularBitcoin', [])
       }
 
       opts.key = key;
-      return new BtcObj(opts);
     }
+
+    // validates address
+    if (opts.hasOwnProperty('addr')) {
+      // validate the address
+      if (!opts.addr || opts.addr.length < 26 || opts.addr.length > 34) {
+        return null;
+      }
+      try {
+        var addr = bitcoin.Address.fromBase58Check(opts.addr);
+      } catch (error) {
+        return null
+      }
+      opts.addr = addr;
+    }
+
+    return new BtcObj(opts);
   }
 })
 
-.directive('wifModel', function(BtcObjBuilder) {
+.directive('btcType', function(BtcObjBuilder) {
   return {
     require: "ngModel",
     scope: {
-      wifModel: "="
+      btcModel: "="
     },
     link: function (scope, elem, attrs, ctrl) {
 
-      // value can be several types (for now, always WIF)
+      // value can be several types
       // for each type:
       //  validate input
       //  if input is valid, create object, bind to btcModel
       //  if input is invalid, set btcModel object to undefined
       function createBtcObj (value) {
-        // scope.btcModel will be null if wif is invalid
-        scope.wifModel = BtcObjBuilder.build({
-          wif: value,
-          utxo: true,
-          opreturn: true
-        });
-        return scope.wifModel;
+        switch (attrs.btcType) {
+          case 'wif':
+            // scope.btcModel will be null if wif is invalid
+            scope.btcModel = BtcObjBuilder.build({
+              wif: value,
+              utxo: true,
+              opreturn: true
+            });
+            break;
+          case 'addr':
+            
+            // scope.btcModel will be null if wif is invalid
+            scope.btcModel = BtcObjBuilder.build({
+              addr: value,
+              pubKey: true
+            });
+            break;
+
+          default: 
+            throw new Error("Type not supported");
+        }
+        return scope.btcModel;
       }
 
       // This is a bit of a hack.  I want to create an object based on user
@@ -251,14 +317,14 @@ angular.module('AngularBitcoin', [])
       // validates value based on user-input
       ctrl.$parsers.unshift(function(value) {
         var model = createBtcObj(value);
-        ctrl.$setValidity('wifModel', !!model);
+        ctrl.$setValidity('btcModel', !!model);
         return model ? value : false;
       });
 
       // validates value based on programmatic change
       ctrl.$formatters.unshift(function(value) {
         var model = createBtcObj(value);
-        ctrl.$setValidity('wifModel', !!model);
+        ctrl.$setValidity('btcModel', !!model);
         return model ? value : false;
       });
       
