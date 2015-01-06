@@ -105,6 +105,17 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
     debugger;
   }
 
+  $scope.recipientAddrMsgs = {
+    "success_no_data": {
+      message: "This address has never created a transaction.  Transactions reveal public keys, and public keys are necessary for message encryption.",
+      class: "warning"
+    },
+    "success_data": {
+      message: "Successfully fetched public key.",
+      class: "success"
+    }
+  }
+
   $scope.$watch('recipient', function(newVal, oldVal) {
     if (newVal && newVal.length > 26) {
       //
