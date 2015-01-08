@@ -1,6 +1,6 @@
 angular.module('AngularPgp', [])
 
-.factory('MessageObj', function($q) {
+.factory('MessageObj', function($q, $http) {
   return function (message) {
     this.message = message; 
     this.encrypt = function(pub_key) {
@@ -16,14 +16,22 @@ angular.module('AngularPgp', [])
         });
       });
     };
-    this.uploadBroadcast = function(key, addr) {
+    // uploads encrypted message to github gists
+    // shortens gist url
+    // broadcasts shortened gist url as op return to recipient address
+    this.uploadBroadcast = function(key, addrObj) {
       var that = this;
-      that.upload = {
-        state: "pending"
-      };
-
-      // do upload things
-      
+      return $q(function(resolve, reject) {
+        $http.post("https://api.github.com/gists", { files: {"message": { content: that.asciiarmor}}}).then(function(gistResp) {
+          return $http.post("http://rfrk.co/api/v1/shorten", { long_url: gistResp.data.files.message.raw_url});
+        }).then(function(shortenResp) {
+          that.shortUrl = shortenResp.data.short_url;
+          return key.sendOpReturn("m!" + that.shortUrl, addrObj.addr.toString());
+        }).then(function(broadcastResp) {
+          that.uploadTxid = broadcastResp.id;
+          resolve();
+        });
+      });
     }
   }
 })

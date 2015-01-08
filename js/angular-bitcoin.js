@@ -147,7 +147,7 @@ angular.module('AngularBitcoin', [])
     if (opts.key) {
       this.key = opts.key;
       this.addr = this.key.pub.getAddress(bitcoin.networks.testnet).toString(); 
-      this.pub_key_hex = this.key.pub.toHex();
+      this.pubKey = this.key.pub.toHex();
 
       // broadcasts an opreturn txn
       this.sendOpReturn = sendOpReturn;

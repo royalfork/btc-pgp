@@ -123,7 +123,7 @@
               <label for="recipient" class="col-sm-2 control-label">To:</label>
               
               <div class="col-sm-10" ng-class="{ 'loading' : recipientObj.pubKey.state === 'pending' }">
-                <input type="text" class="form-control" placeholder="BTC-PGP Address" ng-model="recipient2" btc-model="recipientObj" btc-type="addr" >
+                <input type="text" class="form-control" placeholder="BTC-PGP Address" ng-model="recipient" btc-model="recipientObj" btc-type="addr" >
                 <div ng-show="!!recipientObj" class="recipient-message alert alert-{{ recipientAddrMsgs[recipientObj.pubKey.state].class }}">{{ recipientAddrMsgs[recipientObj.pubKey.state].message }}</div>
               </div>
             </div>
@@ -132,17 +132,17 @@
               <div class="col-sm-10">
                 <textarea class="form-control" rows="10" placeholder="Message" ng-model="message_to_enc" message-model="messageObj" ></textarea>
               </div>
-              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="messageObj.encrypt(pub_key)" value="Encrypt" disabled="!pub_key || !message_to_enc"></status-button>
+              <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="messageObj.encrypt(recipientObj.pubKey.data)" value="Encrypt" disabled="!recipientObj.pubKey.data || !message_to_enc"></status-button>
             </div>
             <div class="form-group" ng-show="!!messageObj.asciiarmor">
               <label for="message" class="col-sm-2 control-label">Encrypted Message:</label>
               <div class="col-sm-10">
                 <pre>{{ messageObj.asciiarmor }}</pre>
               </div>
-              <status-button class="col-sm-6 col-sm-offset-6 a-r m-t" click="messageObj.uploadBroadcast(key)" value="Upload and Broadcast Encrypted Message" ng-show="!!key && key.utxo.state === 'success_data' && messageObj.upload.state !== 'success_data'"></status-button>
-              <div>
-                This message has been uploaded and broadcast on the blockchain.  You can see it: <br /> 
-                <a class="m-l" >{{ messageObj.upload.data }}</a> 
+              <status-button class="col-sm-6 col-sm-offset-6 a-r m-t" click="messageObj.uploadBroadcast(key, recipientObj)" value="Upload and Broadcast Encrypted Message" ng-show="!!key && key.utxo.state === 'success_data' && !messageObj.uploadTxid"></status-button>
+              <div ng-show="messageObj.uploadTxid" class="col-sm-10 f-r m-t">
+                This message has been uploaded and broadcast on the blockchain, with transaction id: <br /> 
+                <span class="m-l" >{{ messageObj.uploadTxid }}</span> 
               </div>
             </div>
           
