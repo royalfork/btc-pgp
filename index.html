@@ -8,7 +8,6 @@
 
     <script src="js/jq.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/bootstrap/bootstrap.js" type="text/javascript" charset="utf-8"></script>
-    <script src="js/openpgp.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/bitcoinjs.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/angular.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/angular-bitcoin.js" type="text/javascript" charset="utf-8"></script>
@@ -25,9 +24,9 @@
 
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation"><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
-        <li role="presentation" class="active"><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
-        <li role="presentation"><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
+        <li role="presentation" class=""><a href="#setup" aria-controls="setup" role="tab" data-toggle="tab">Setup</a></li>
+        <li role="presentation" class=""><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
+        <li role="presentation" class="active"><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
       </ul>
 
       <!-- Tab panes -->
@@ -95,7 +94,7 @@
                   <div ng-show="!key">Please create private key first.</div>
                   <div ng-show="!!key && key.opreturn.state === 'success_no_data' && key.utxo.state === 'success_no_data'">Please fund this account first.</div>
                   <div ng-show="!!key && key.opreturn.state === 'success_no_data' && key.utxo.state === 'success_data'" class="l-h">
-                    A special message be broadcast so others may securely message you.
+                    A special message must be broadcast so others may securely message you.
                     <br />
                     <input type="text" id="message" ng-model="message">
                     <span ng-class="{ 'font-red': message.length > 38, 'font-green': !message || message.length <= 38 }">{{ message.length || 0}} / 38</span>
@@ -117,7 +116,7 @@
           </p>
         </div>
 
-        <div role="tabpanel" class="tab-pane active" id="encrypt" ng-controller="EncryptCtrl">
+        <div role="tabpanel" class="tab-pane" id="encrypt" ng-controller="EncryptCtrl">
           <form class="form-horizontal" role="form">
             <div class="form-group">
               <label for="recipient" class="col-sm-2 control-label">To:</label>
@@ -149,7 +148,22 @@
         </div>
 
 
-        <div role="tabpanel" class="tab-pane" id="decrypt">...</div>
+        <div role="tabpanel" class="tab-pane active" id="decrypt" ng-controller="DecryptCtrl">
+          <input type="button" value="debug" ng-click="debug()" />
+          <div class="form-group">
+            <label for="dec_message" class="col-sm-2 control-label">Encrypted Message:</label>
+            <div class="col-sm-10">
+              <textarea class="form-control font-mono" rows="10" placeholder="PGP Message" ng-model="message_to_dec" message-model="decMessage" encrypted spellcheck="false" ></textarea>
+            </div>
+            <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="decMessage.decrypt(key)" value="Decrypt" disabled="!key || !message_to_dec"></status-button>
+          </div>
+          <div class="form-group" ng-show="!!decMessage.message">
+            <label for="message" class="col-sm-2 control-label">Message:</label>
+            <div class="col-sm-10">
+              {{ decMessage.message }}
+            </div>
+          </div>
+        </div>
 
 
 

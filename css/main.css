@@ -31,6 +31,10 @@
   color: red;
 }
 
+.font-mono {
+  font-family: monospace;
+}
+
 .font-green {
   color: green;
 }

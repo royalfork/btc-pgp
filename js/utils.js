@@ -15,6 +15,8 @@ angular.module('Utils', [])
           scope.state = "loading";
           scope.click().then(function() {
             scope.state = "complete";
+          }, function() {
+            scope.state = "complete";
           });
         };
       }
