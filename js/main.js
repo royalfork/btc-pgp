@@ -137,11 +137,3 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
   };
 
 });
-
-app.controller('DecryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
-  $scope.debug = function() {
-    console.log($scope);
-    debugger;
-  }
-
-});

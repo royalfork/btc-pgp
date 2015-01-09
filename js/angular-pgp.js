@@ -23,6 +23,7 @@ angular.module('AngularPgp', [])
           that.message = pt;
           resolve();
         }, function() {
+          console.log("Your private key is not authorized to decrypt this PGP message.");
           reject();
         });
       })
