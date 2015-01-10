@@ -12,11 +12,15 @@
 }
 
 .l-h {
-  line-height: 30px;
+  line-height: 25px;
 }
 
 .a-r {
   text-align: right;
+}
+
+.s-m-t {
+  margin-top: 5px;
 }
 
 .m-t {
@@ -25,6 +29,14 @@
 
 .m-l {
   margin-left: 20px;
+}
+
+.p-l {
+  padding-left: 15px;
+}
+
+.no-list {
+  list-style: none;
 }
 
 .font-red {
@@ -153,4 +165,10 @@
 
 .setup tr {
   border-bottom: 1px solid black;
+}
+
+.messages td.date {
+  width: 100px;
+  text-align: right;
+  padding: 10px;
 }

@@ -17,14 +17,17 @@ angular.module('AngularBitcoin', [])
   //  getUrl function
   //    input single obj, returns url string
   //  processSuccess functions
-  //    input response data, returns parsed response
+  //    input response data, returns state.SUCCESS_DATA, or state SUCCESS_NO_DATA, and the data
   var types = {
     "utxo": {
       getUrl: function(addr) {
         return "https://api.chain.com/v2/testnet3/addresses/"+addr+"/unspents?api-key-id=" + CHAIN_KEY;
       },
       processSuccess: function(data) {
-        return data; 
+        return {
+          state: data.length > 0 ? states.SUCCESS_DATA : states.SUCCESS_NO_DATA,
+          data: data
+        }; 
       }
     },
     "opreturn": {
@@ -32,7 +35,17 @@ angular.module('AngularBitcoin', [])
         return "https://api.chain.com/v2/testnet3/addresses/"+addr+"/op-returns?api-key-id=" + CHAIN_KEY;
       },
       processSuccess: function(data) {
-        return data; 
+        // opreturn messages store 2 things:
+        //  single greetings
+        //  array of messages
+        // it's possible that neither of these exist
+        return {
+          state: data.length > 0 ? states.SUCCESS_DATA : states.SUCCESS_NO_DATA,
+          data: {
+            greeting: BtcUtils.getGreeting(data),
+            messages: BtcUtils.getMessages(data)
+          }
+        }; 
       }
     },
     "txns": {
@@ -40,7 +53,10 @@ angular.module('AngularBitcoin', [])
         return "https://api.chain.com/v2/testnet3/addresses/"+addr+"/transactions?api-key-id=" + CHAIN_KEY;
       },
       processSuccess: function(data) {
-        return data;
+        return {
+          state: data.length > 0 ? states.SUCCESS_DATA : states.SUCCESS_NO_DATA,
+          data: data
+        }; 
       }
     },
     "pubKey": {
@@ -53,10 +69,17 @@ angular.module('AngularBitcoin', [])
           var v = data[i];
           for (var i = 0, l = v.inputs.length; i < l; i ++) {
             if (v.inputs[i].addresses[0] === addr.toString()) {
-              return v.inputs[i]["script_signature"].split(" ")[1]
+              return {
+                data: v.inputs[i]["script_signature"].split(" ")[1],
+                state: states.SUCCESS_DATA
+              }
             }
           }
         }
+
+        return {
+          state: states.SUCCESS_NO_DATA
+        }; 
       }
     }
   };
@@ -75,12 +98,10 @@ angular.module('AngularBitcoin', [])
     var obj = {};
     obj.state = states.PENDING;
     $http.get(types[type].getUrl(args)).then(function(resp) {
-      var data = types[type].processSuccess(resp.data, args);
-      if (data && data.length > 0) {
-        obj.state = states.SUCCESS_DATA;
-        obj.data = data;
-      } else {
-        obj.state = states.SUCCESS_NO_DATA;
+      var resp = types[type].processSuccess(resp.data, args);
+      obj.state = resp.state;
+      if (resp.data) {
+        obj.data = resp.data;
       }
     }, function(error) {
       obj.state = states.FAIL;
@@ -201,6 +222,32 @@ angular.module('AngularBitcoin', [])
 })
 
 .service('BtcUtils', function() {
+  this.getGreeting = function(opreturnArray) {
+    if (opreturnArray) {
+      for (var i = 0, l = opreturnArray.length; i < l; i ++) {
+        var v = opreturnArray[i];
+        var match = v.text.match(/^p!(.*)$/);
+        if (match) {
+          return match[1];
+        }
+      }
+    }
+  }
+
+  this.getMessages = function(opreturnArray) {
+    if (opreturnArray) {
+      var msgs = [];
+      for (var i = 0, l = opreturnArray.length; i < l; i ++) {
+        var v = opreturnArray[i];
+        var match = v.text.match(/^m!(.*)$/);
+        if (match) {
+          msgs.push(v);
+        }
+      }
+      return msgs;
+    }
+  }
+
   this.getUtxoIndex = function getUtxoIndex (txn, addr) {
     for (var i = 0, l = txn.vout.length; i < l; i ++) {
       var v = txn.vout[i];

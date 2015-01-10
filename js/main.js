@@ -40,6 +40,11 @@ Number.prototype.toBitcoin = function() {
 
 app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
 
+  $scope.debug = function() {
+    console.log($scope);
+    debugger;
+  }
+
   $scope.createRandom = function() {
     $scope.privateWif = bitcoin.ECKey.makeRandom().toWIF();
   };
@@ -85,15 +90,8 @@ app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
     });
   };
 
-
-  $scope.debug = function() {
-    $scope.key.utxo.state = "pending";
-  }
-  $scope.debug2 = function() {
-    $scope.key.utxo.state = "success_no_data";
-  }
-  $scope.debug3 = function() {
-    $scope.key.utxo.state = "success_data";
+  $scope.decrypt = function(message) {
+    console.log("Decrypt message: " + message.transaction_hash);
   }
 
 });
