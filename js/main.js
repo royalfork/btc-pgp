@@ -40,16 +40,6 @@ Number.prototype.toBitcoin = function() {
 
 app.controller('BtcPgp2', function($scope, $rootScope, $q, $http, $timeout, BtcUtils) {
 
-  $scope.changeTab = function() {
-    $('#encrypt').tab('show');
-  }
-
-
-  $scope.debug = function() {
-    console.log($scope);
-    debugger;
-  }
-
   $scope.createRandom = function() {
     $scope.privateWif = BtcUtils.getRandom();
   };
@@ -103,11 +93,6 @@ app.controller('BtcPgp2', function($scope, $rootScope, $q, $http, $timeout, BtcU
 
 app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
 
-  $scope.debug = function() {
-    console.log($scope);
-    debugger;
-  }
-
   $scope.recipientAddrMsgs = {
     "success_no_data": {
       message: "This address has never created a transaction.  Transactions reveal public keys, and public keys are necessary for message encryption.",
@@ -125,27 +110,9 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
     }
   });
 
-  $scope.upload = function(message) {
-    return $q(function(resolve, reject) {
-      $http.post("https://api.github.com/gists", { files: {"message": { content: message}}}).then(function(gistResp) {
-        return $http.post("http://rfrk.co/api/v1/shorten", { long_url: gistResp.data.files.message.raw_url});
-      }).then(function(shortenResp) {
-        $scope.shortUrl = shortenResp.data.short_url;
-        return $scope.broadcast($scope.key, "m!" + $scope.shortUrl, $scope.recipient);
-      }).then(function(broadcastResp) {
-        console.log("DONE");
-        resolve();
-      });
-    });
-  };
 });
 
 app.controller('DecryptCtrl', function($scope, $rootScope, $http, EncMessageObj) {
-
-  $scope.debug = function() {
-    console.log($scope);
-    debugger;
-  }
 
   $rootScope.$on('decrypt', function(evt, msg) {
     $('#decrypt_tab').tab('show');
