@@ -51,7 +51,7 @@ app.controller('BtcPgp2', function($scope, $rootScope, $q, $http, $timeout, BtcU
   }
 
   $scope.createRandom = function() {
-    $scope.privateWif = bitcoin.ECKey.makeRandom().toWIF();
+    $scope.privateWif = BtcUtils.getRandom();
   };
 
   // this should probably go into angular-bitcoin module

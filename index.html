@@ -2,7 +2,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
-    <title>Test</title>
+    <title>BtcPGP</title>
     <link rel="stylesheet" href="css/bootstrap/bootstrap.css" type="text/css" media="screen" charset="utf-8" />
     <link rel="stylesheet" href="css/main.css" type="text/css" media="screen" charset="utf-8" />
 
@@ -49,7 +49,7 @@
                 <td>
                   <input type="text" 
                     class="wif-input l-h"
-                    placeholder="Enter WIF" 
+                    placeholder="Enter Testnet WIF" 
                     ng-model="privateWif" 
                     save-cookie
                     btc-type="wif"
@@ -100,7 +100,7 @@
                     </div>
                   </div>
                   <div ng-show="!!key && key.opreturn.state === 'success_data'" class="l-h">
-                    Message: {{ key.opreturn.data.greeting }}
+                    Greeting: {{ key.opreturn.data.greeting }}
                   </div>
                 </td>
               </tr>

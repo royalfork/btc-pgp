@@ -2,8 +2,30 @@ angular.module('AngularBitcoin', [])
 
 .value('CHAIN_KEY', 'DEMO-4a5e1e4')
 
+// this is an object that holds all opreturns for an address
+// it when adding a new opreturn, it will parse it as a greeting or message
+.factory('OpReturnList', function() {
+  return function(addr) {
+    this.addr = addr;
+    this.txns = []; // holds raw txns
+    this.messages = [];
+    this.greeting = "";
+    this.addOpReturn = function(txn) {
+      this.txns.push(txn);
+      var msg_match = txn.text.match(/^m\!(.*)$/);
+      if (msg_match && txn.receiver_addresses && txn.receiver_addresses[0] === this.addr) {
+        return this.messages.push(txn);
+      }
+      var greet_match = txn.text.match(/^p\!(.*)$/);
+      if (greet_match && txn.sender_addresses && txn.sender_addresses[0] === this.addr) {
+        return this.greeting = greet_match[1]; 
+      };
+    }
+  }
+})
+
 // given a key, this creates an object with necessary key info
-.factory('BtcObj', function($q, $http, $timeout, BtcUtils, CHAIN_KEY) {
+.factory('BtcObj', function($q, $http, $timeout, BtcUtils, OpReturnList, CHAIN_KEY) {
   // different states that requests can be in
   var states = {
     PENDING:          "pending",
@@ -34,18 +56,28 @@ angular.module('AngularBitcoin', [])
       getUrl: function(addr) {
         return "https://api.chain.com/v2/testnet3/addresses/"+addr+"/op-returns?api-key-id=" + CHAIN_KEY;
       },
-      processSuccess: function(data) {
+      processSuccess: function(data, addr) {
         // opreturn messages store 2 things:
         //  single greetings
         //  array of messages
         // it's possible that neither of these exist
-        return {
-          state: data.length > 0 ? states.SUCCESS_DATA : states.SUCCESS_NO_DATA,
-          data: {
-            greeting: BtcUtils.getGreeting(data),
-            messages: BtcUtils.getMessages(data)
+        if (data.length === 0) {
+          return {
+            state: states.SUCCESS_NO_DATA
           }
-        }; 
+        }
+        var opList = new OpReturnList(addr.toString());
+
+        for (var i = 0, l = data.length; i < l; i ++) {
+          var v = data[i];
+          opList.addOpReturn(v);
+        }
+
+        return {
+          state: states.SUCCESS_DATA,
+          data: opList
+        }
+
       }
     },
     "txns": {
@@ -167,6 +199,13 @@ angular.module('AngularBitcoin', [])
           value: tx.outs[0].value
         });
 
+        that.addOpReturn({
+          transaction_hash: resp.data.id,
+          text: message,
+          sender_addresses: [that.addr],
+          receiver_addresses: [recipient]
+        });
+
         resolve(resp.data);
 
       }, function(error) {
@@ -176,6 +215,10 @@ angular.module('AngularBitcoin', [])
       });
         
     });
+  }
+
+  function processOpReturn(ctx, txn) {
+   
   }
 
 
@@ -215,8 +258,8 @@ angular.module('AngularBitcoin', [])
 
       this.addOpReturn = function(txn) {
         this.opreturn.state = states.SUCCESS_DATA;
-        this.opreturn.data = this.opreturn.data || [];
-        this.opreturn.data.push(txn);
+        this.opreturn.data = this.opreturn.data || new OpReturnList(this.addr);
+        this.opreturn.data.addOpReturn(txn);
         return this.opreturn;
       }
     }
@@ -238,7 +281,9 @@ angular.module('AngularBitcoin', [])
 
 .service('BtcUtils', function() {
 
-
+  this.getRandom = function() {
+    return bitcoin.ECKey.makeRandom().toWIF(bitcoin.networks.testnet);
+  }
 
   this.getGreeting = function(opreturnArray) {
     if (opreturnArray) {
