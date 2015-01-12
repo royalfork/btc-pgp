@@ -124,13 +124,17 @@ angular.module('AngularBitcoin', [])
       var tx_value = 0;
       var needed = recipient ? 2000 : 1000; // txn fee + recipient txn
       for (var i = 0, l = that.utxo.data.length; i < l; i ++) {
-        var utxo = that.utxo.data[i];  
+        var utxo = that.utxo.data.pop();  
         tx.addInput(utxo.transaction_hash, utxo.output_index);
         tx_value += utxo.value;
         if (tx_value >= needed) {
           break;
         }
       }
+
+      // add change
+      // this must be done first, because when we call 'addUtxo' below, the output_index is hardcoded as 1
+      tx.addOutput(that.addr, tx_value - needed);
 
       // create op_return script
       var script = bitcoin.Script.fromASM("OP_RETURN " + BtcUtils.a2hex(message));
@@ -140,9 +144,6 @@ angular.module('AngularBitcoin', [])
       if (recipient) {
         tx.addOutput(that.addr, 1000);
       }
-
-      // add change
-      tx.addOutput(that.addr, tx_value - needed);
 
       // sign inputs
       for (var i = 0, l = tx.tx.ins.length; i < l; i ++) {
@@ -162,14 +163,14 @@ angular.module('AngularBitcoin', [])
       $http.post("http://faucet.royalforkblog.com/sendraw", { hex: tx.toHex() }).then(function(resp) {
         that.addUtxo({
           transaction_hash: resp.data.id,
-          output_index: 1,
-          value: tx.outs[1].value
+          output_index: 0,
+          value: tx.outs[0].value
         });
 
         resolve(resp.data);
 
       }, function(error) {
-        alert("There was an error funding your address.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");
+        alert("There was an error.  Please refresh and try again. If the problem persists, please email rf@royalforkblog.com");
         console.log(error);
         reject();
       });

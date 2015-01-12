@@ -142,14 +142,10 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
 
 app.controller('DecryptCtrl', function($scope, $rootScope, $http, EncMessageObj) {
 
-  var msg = JSON.parse('{"transaction_hash":"a081eda3a3ae4e3ce75908dc54aec69f511e4157cc952203c0f0d16dd4623d39","hex":"6d21687474703a2f2f7266726b2e636f2f4d544d3d","text":"m!http://rfrk.co/MTM=","receiver_addresses":["mvdZG3ufEbKdga2SzynAqbQYVncJPQ9Jbh"],"sender_addresses":["mvdZG3ufEbKdga2SzynAqbQYVncJPQ9Jbh"],"$$hashKey":"object:14"}');
-
-
   $scope.debug = function() {
     console.log($scope);
     debugger;
   }
-
 
   $rootScope.$on('decrypt', function(evt, msg) {
     $('#decrypt_tab').tab('show');
