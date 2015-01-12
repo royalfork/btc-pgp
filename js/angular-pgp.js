@@ -23,7 +23,7 @@ angular.module('AngularPgp', [])
           that.message = pt;
           resolve();
         }, function() {
-          console.log("Your private key is not authorized to decrypt this PGP message.");
+          alert("Your private key is not authorized to decrypt this PGP message.");
           reject();
         });
       })
@@ -71,7 +71,8 @@ angular.module('AngularPgp', [])
   return {
     require: "ngModel",
     scope: {
-      messageModel: "="
+      messageModel: "=",
+      ngModel: "="
     },
     link: function (scope, elem, attrs, ctrl) {
       var enc;
@@ -88,15 +89,6 @@ angular.module('AngularPgp', [])
         return value;
       });
 
-      // validates value based on programmatic change
-      ctrl.$formatters.unshift(function(value) {
-        if (enc) {
-          scope.messageModel = new EncMessageObj(value);
-        } else {
-          scope.messageModel = new MessageObj(value);
-        }
-        return value;
-      });
     }
   }
 });

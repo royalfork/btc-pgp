@@ -117,28 +117,46 @@ angular.module('AngularBitcoin', [])
       if (!that.utxo.data) {
         return reject("No utxo data");
       }
-      var utxo = that.utxo.data.pop();
+
       var tx = new bitcoin.TransactionBuilder();
-      tx.addInput(utxo.transaction_hash, utxo.output_index);
+
+      // add inputs
+      var tx_value = 0;
+      var needed = recipient ? 2000 : 1000; // txn fee + recipient txn
+      for (var i = 0, l = that.utxo.data.length; i < l; i ++) {
+        var utxo = that.utxo.data[i];  
+        tx.addInput(utxo.transaction_hash, utxo.output_index);
+        tx_value += utxo.value;
+        if (tx_value >= needed) {
+          break;
+        }
+      }
 
       // create op_return script
       var script = bitcoin.Script.fromASM("OP_RETURN " + BtcUtils.a2hex(message));
       tx.addOutput(script, 0);
 
-      var sat = utxo.value;
-
       // if there's a recipient, add recipient
       if (recipient) {
         tx.addOutput(that.addr, 1000);
-        sat -= 1000;
       }
 
       // add change
-      tx.addOutput(that.addr, sat - 1000);
+      tx.addOutput(that.addr, tx_value - needed);
 
-      tx.sign(0, that.key);
-      tx = tx.build();
-      console.log(tx);
+      // sign inputs
+      for (var i = 0, l = tx.tx.ins.length; i < l; i ++) {
+        tx.sign(i, that.key);
+      }
+
+      // build txn (this throws exceptions if there are issues)
+      try {
+        tx = tx.build();
+        console.log(tx);
+      } catch (e) {
+        alert("There was a problem broadcasting this message on the blockchain.  Please try again, or file a bug report.");
+        reject();
+      }
 
       // broadcast transaction across network
       $http.post("http://faucet.royalforkblog.com/sendraw", { hex: tx.toHex() }).then(function(resp) {
@@ -146,10 +164,6 @@ angular.module('AngularBitcoin', [])
           transaction_hash: resp.data.id,
           output_index: 1,
           value: tx.outs[1].value
-        });
-
-        that.addOpReturn({
-          text: message
         });
 
         resolve(resp.data);
@@ -222,6 +236,9 @@ angular.module('AngularBitcoin', [])
 })
 
 .service('BtcUtils', function() {
+
+
+
   this.getGreeting = function(opreturnArray) {
     if (opreturnArray) {
       for (var i = 0, l = opreturnArray.length; i < l; i ++) {
@@ -280,6 +297,35 @@ angular.module('AngularBitcoin', [])
 // if valid, returns a BtcObj
 // if invalid, returns undef
 .service('BtcObjBuilder', function(BtcObj) {
+  // value can be several types
+  // for each type:
+  //  validate input
+  //  if input is valid, create object, bind to btcModel
+  //  if input is invalid, set btcModel object to undefined
+  this.createBtcObj = function (value, type) {
+    var model;
+    switch (type) {
+      case 'wif':
+        // scope.btcModel will be null if wif is invalid
+        model = this.build({
+          wif: value,
+          utxo: true,
+          opreturn: true
+        });
+        break;
+      case 'addr':
+        // scope.btcModel will be null if wif is invalid
+        model = this.build({
+          addr: value,
+          pubKey: true
+        });
+        break;
+      default: 
+        throw new Error("Type not supported");
+    }
+    return model;
+  }
+
   this.build = function(opts) {
     // validates WIF
     if (opts.hasOwnProperty("wif")) {
@@ -326,36 +372,6 @@ angular.module('AngularBitcoin', [])
     },
     link: function (scope, elem, attrs, ctrl) {
 
-      // value can be several types
-      // for each type:
-      //  validate input
-      //  if input is valid, create object, bind to btcModel
-      //  if input is invalid, set btcModel object to undefined
-      function createBtcObj (value) {
-        switch (attrs.btcType) {
-          case 'wif':
-            // scope.btcModel will be null if wif is invalid
-            scope.btcModel = BtcObjBuilder.build({
-              wif: value,
-              utxo: true,
-              opreturn: true
-            });
-            break;
-          case 'addr':
-            
-            // scope.btcModel will be null if wif is invalid
-            scope.btcModel = BtcObjBuilder.build({
-              addr: value,
-              pubKey: true
-            });
-            break;
-
-          default: 
-            throw new Error("Type not supported");
-        }
-        return scope.btcModel;
-      }
-
       // This is a bit of a hack.  I want to create an object based on user
       // input, and bind that object to the btcModel object.  To trigger object
       // creation, we use validation functions which fire whenever the user
@@ -363,18 +379,38 @@ angular.module('AngularBitcoin', [])
 
       // validates value based on user-input
       ctrl.$parsers.unshift(function(value) {
-        var model = createBtcObj(value);
-        ctrl.$setValidity('btcModel', !!model);
-        return model ? value : false;
+        scope.btcModel = BtcObjBuilder.createBtcObj(value, attrs.btcType);
+        ctrl.$setValidity('btcModel', !!scope.btcModel);
+        return !!scope.btcModel ? value : false;
       });
 
       // validates value based on programmatic change
       ctrl.$formatters.unshift(function(value) {
-        var model = createBtcObj(value);
-        ctrl.$setValidity('btcModel', !!model);
-        return model ? value : false;
+        scope.btcModel = BtcObjBuilder.createBtcObj(value, attrs.btcType);
+        ctrl.$setValidity('btcModel', !!scope.btcModel);
+        return !!scope.btcModel ? value : false;
       });
       
+    }
+  }
+})
+
+.directive('btcAddress', function(BtcObjBuilder) {
+  return {
+    scope: {
+      btcModel: "="
+    },
+    link: function (scope, elem, attrs, ctrl) {
+
+      // watches inner html and sets btcModel obj when it changes
+      scope.$watch(function() {
+        return elem.html();
+      }, function(newVal, oldVal) {
+        scope.btcModel = BtcObjBuilder.build({
+          addr: newVal,
+          opreturn: true
+        });
+      });
     }
   }
 })

@@ -38,7 +38,12 @@ Number.prototype.toBitcoin = function() {
     return parseFloat(this.toBitcoinString());
 };
 
-app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
+app.controller('BtcPgp2', function($scope, $rootScope, $q, $http, $timeout, BtcUtils) {
+
+  $scope.changeTab = function() {
+    $('#encrypt').tab('show');
+  }
+
 
   $scope.debug = function() {
     console.log($scope);
@@ -91,8 +96,8 @@ app.controller('BtcPgp2', function($scope, $q, $http, $timeout, BtcUtils) {
   };
 
   $scope.decrypt = function(message) {
-    console.log("Decrypt message: " + message.transaction_hash);
-  }
+    $rootScope.$broadcast('decrypt', message);
+  };
 
 });
 
@@ -133,5 +138,41 @@ app.controller('EncryptCtrl', function($scope, $cookies, $q, $http, $timeout) {
       });
     });
   };
-
 });
+
+app.controller('DecryptCtrl', function($scope, $rootScope, $http, EncMessageObj) {
+
+  var msg = JSON.parse('{"transaction_hash":"a081eda3a3ae4e3ce75908dc54aec69f511e4157cc952203c0f0d16dd4623d39","hex":"6d21687474703a2f2f7266726b2e636f2f4d544d3d","text":"m!http://rfrk.co/MTM=","receiver_addresses":["mvdZG3ufEbKdga2SzynAqbQYVncJPQ9Jbh"],"sender_addresses":["mvdZG3ufEbKdga2SzynAqbQYVncJPQ9Jbh"],"$$hashKey":"object:14"}');
+
+
+  $scope.debug = function() {
+    console.log($scope);
+    debugger;
+  }
+
+
+  $rootScope.$on('decrypt', function(evt, msg) {
+    $('#decrypt_tab').tab('show');
+
+    // create blank EncMessageObj
+    var obj = new EncMessageObj();
+    $scope.decMessage = obj;
+    obj.sender = msg.sender_addresses[0];
+
+    var url_match = msg.text.match(/^m\!(.*)$/);
+    if (url_match) {
+      $scope.messageLoading = true;
+      $http.get(url_match[1]).then(function(resp) {
+        $scope.messageLoading = false;
+        obj.asciiarmor = resp.data;
+        $scope.message_to_dec = resp.data;
+      }, function(err) {
+        $scope.messageLoading = false;
+        alert("Unfortunately, we can't fetch your message.");
+      });
+    } else {
+      alert("Unfortunately, we can't fetch your message.");
+    }
+  });
+});
+

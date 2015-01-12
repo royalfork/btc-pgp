@@ -24,9 +24,9 @@
 
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#key" aria-controls="key" role="tab" data-toggle="tab">Key</a></li>
-        <li role="presentation" class=""><a href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
-        <li role="presentation" class=""><a href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
+        <li role="presentation" class="active"><a id="key_tab" href="#key" aria-controls="key" role="tab" data-toggle="tab">Key</a></li>
+        <li role="presentation" class=""><a id="encrypt_tab" href="#encrypt" aria-controls="encrypt" role="tab" data-toggle="tab">Encrypt</a></li>
+        <li role="presentation" class=""><a id="decrypt_tab" href="#decrypt" aria-controls="decrypt" role="tab" data-toggle="tab">Decrypt</a></li>
       </ul>
 
       <!-- Tab panes -->
@@ -34,6 +34,7 @@
 
 
         <div role="tabpanel" class="tab-pane active" id="key">
+          <input type="button" name="" id="" value="change" ng-click="changeTab()" />
           <p>This app lets you send PGP encrypted mail on the bitcoin blockchain.  Mail is encrypted with bitcoin public keys, according to the OpenPGP standard, and sent to recipients using OP_RETURN transactions.  This is just an experiment, and uses the Testnet blockchain.  To use this app, you need a private key (to send and decrypt messages), a small amount of bitcoin (to broadcast messages to recipients), and a special BTC-PGP transaction (to broadcast your pubilc key).  All of this can be done below:  
           <!--3 rows, 3 columns-->
           <!--Rows: private key, balance, btc-pgp message-->
@@ -108,18 +109,18 @@
           </table>
 
 
-          <div style="height:50px" ng-show="key.utxo.state === 'success_data' && key.opreturn.state === 'success_data'">
-            <label class="col-sm-4">Your BTC-PGP Address:</label>
-            <div class="col-sm-8">
+          <div class="border" ng-show="key.utxo.state === 'success_data' && key.opreturn.state === 'success_data'">
+            <label>Your BTC-PGP Address:</label>
+            <span class="m-l">
              {{ key.addr }}
-            </div>
+            </span>
           </div>
 
-          <div class="col-sm-4" ng-show="key.opreturn.data.messages.length === 0">
+          <div class="col-sm-4 m-t" ng-show="key.opreturn.data.messages.length === 0">
             <i>No messages.</i>
           </div>
 
-          <div ng-show="key.opreturn.data.messages.length > 0">
+          <div class="m-t" ng-show="key.opreturn.data.messages.length > 0">
             <div class="p-l">
               <label>Messages:</label>
             </div>
@@ -130,11 +131,7 @@
             </ul>
           </div>
 
-          <input type="button" name="" id="" value="debug" ng-click="debug()" />
-
-          <!--<div class="col-sm-4 m-t">-->
-            <!--<span ng-show="key.opreturn.data.length < 2">No new messages.</span>-->
-          <!--</div>-->
+          <!--<input type="button" name="" id="" value="debug" ng-click="debug()" />-->
 
         </div>
 
@@ -166,24 +163,37 @@
                 <span class="m-l" >{{ messageObj.uploadTxid }}</span> 
               </div>
             </div>
+          </form>
           
         </div>
 
 
-        <div role="tabpanel" class="tab-pane" id="decrypt">
-          <div class="form-group">
-            <label for="dec_message" class="col-sm-2 control-label">Encrypted Message:</label>
+        <div role="tabpanel" class="tab-pane" id="decrypt" ng-controller="DecryptCtrl">
+          <input type="button" name="" id="" value="debug" ng-click="debug()" />
+          <form class="form-horizontal" role="form">
+          <div class="form-group clear" ng-show="!!decMessage.sender">
+            <label class="col-sm-2 a-r">From:</label>
             <div class="col-sm-10">
+              <span btc-model="msgSender" btc-address >{{ decMessage.sender }}</span><span ng-show="!!msgSender.opreturn.data.greeting"> - <i>{{ msgSender.opreturn.data.greeting }}</i></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dec_message" class="col-sm-2 a-r">Encrypted Message:</label>
+            <div class="col-sm-10" ng-class="{ 'loading' : !!messageLoading }">
               <textarea class="form-control font-mono" rows="10" placeholder="PGP Message" ng-model="message_to_dec" message-model="decMessage" encrypted spellcheck="false" ></textarea>
             </div>
-            <status-button class="col-sm-2 col-sm-offset-10 a-r m-t" click="decMessage.decrypt(key)" value="Decrypt" disabled="!key || !message_to_dec"></status-button>
+            <div class="p-r a-r m-t">
+              <span ng-show="!key"><i>Messages can only be decrypted with a private key, which can be entered in the "Key" tab.</i></span>
+              <status-button click="decMessage.decrypt(key)" class="m-t d-ib" value="Decrypt" disabled="!key || !message_to_dec"></status-button>
+            </div>
           </div>
           <div class="form-group" ng-show="!!decMessage.message">
-            <label for="message" class="col-sm-2 control-label">Message:</label>
+            <label for="message" class="col-sm-2 a-r">Message:</label>
             <div class="col-sm-10">
               {{ decMessage.message }}
             </div>
           </div>
+        </form>
         </div>
 
       </div>

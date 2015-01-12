@@ -3,6 +3,12 @@
   margin: 30px auto;
 }
 
+.clear:after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
 .tab-pane {
   padding: 20px;
 }
@@ -35,6 +41,14 @@
   padding-left: 15px;
 }
 
+.p-r {
+  padding-right: 15px;
+}
+
+.d-ib {
+  display: inline-block;
+}
+
 .no-list {
   list-style: none;
 }
@@ -58,6 +72,15 @@
 .wif-input {
   width: 350px;
   line-height: 26px;
+}
+
+.border {
+  border: 2px solid lightgrey;
+  text-align: center;
+  padding: 10px;
+  display: block;
+  margin: 25px;
+  border-radius: 10px;
 }
 
 .success:before {
