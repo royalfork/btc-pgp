@@ -97,12 +97,12 @@ angular.module('AngularBitcoin', [])
       },
       processSuccess: function(data, addr) {
         // parse list of txns, extract pub key from txn
-        for (var i = 0, l = data.length; i < l; i ++) {
+        for (var i = 0, j = data.length; i < j; i ++) {
           var v = data[i];
-          for (var i = 0, l = v.inputs.length; i < l; i ++) {
-            if (v.inputs[i].addresses[0] === addr.toString()) {
+          for (var k = 0, l = v.inputs.length; k < l; k ++) {
+            if (v.inputs[k].addresses[0] === addr.toString()) {
               return {
-                data: v.inputs[i]["script_signature"].split(" ")[1],
+                data: v.inputs[k]["script_signature"].split(" ")[1],
                 state: states.SUCCESS_DATA
               }
             }
