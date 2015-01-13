@@ -1,6 +1,6 @@
 angular.module('AngularBitcoin', [])
 
-.value('CHAIN_KEY', 'DEMO-4a5e1e4')
+.value('CHAIN_KEY', '82cb03d6a45af7a0d4bb38e74bf519e5')
 
 // this is an object that holds all opreturns for an address
 // it when adding a new opreturn, it will parse it as a greeting or message
