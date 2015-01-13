@@ -363,6 +363,7 @@ angular.module('AngularBitcoin', [])
         // scope.btcModel will be null if wif is invalid
         model = this.build({
           addr: value,
+          opreturn: true,
           pubKey: true
         });
         break;
