@@ -13,7 +13,7 @@ angular.module('AngularBitcoin', [])
     this.addOpReturn = function(txn) {
       this.txns.push(txn);
       var msg_match = txn.text.match(/^m\!(.*)$/);
-      if (msg_match && txn.receiver_addresses && txn.receiver_addresses[0] === this.addr) {
+      if (msg_match && txn.receiver_addresses && txn.sender_addresses[0] !== this.addr) {
         return this.messages.push(txn);
       }
       var greet_match = txn.text.match(/^p\!(.*)$/);
@@ -174,7 +174,7 @@ angular.module('AngularBitcoin', [])
 
       // if there's a recipient, add recipient
       if (recipient) {
-        tx.addOutput(that.addr, 1000);
+        tx.addOutput(recipient, 1000);
       }
 
       // sign inputs
